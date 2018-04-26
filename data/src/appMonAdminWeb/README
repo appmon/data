@@ -1,0 +1,14 @@
+## README
+
+1. Spring boot / Mysql / Gradle 로 개발하였습니다.
+2. 프로젝트를 실행하거나 개발하려면 롬복을 설치해야합니다. (lombok)
+3. 기본적인 환경 구성은 src/main/resources/application.properties 를 참고부탁드립니다.
+4. 템플릿 엔진은  thymeleaf 를 사용하였습니다.
+5. WAR 로 결과물이 나오게 하였고 appMonAdminWeb/build/libs 아래에 WAR파일이 생성됩니다.
+
+## 추가로 해야할 사항들
+# 대시보드 추가
+# 기타 버그 확인
+# 추가될 기능들 논의
+# 로그인 페이지 및 회원삭제 기능 ?
+
