@@ -1,5 +1,6 @@
 package com.admin.web.service.impl;
 
+import com.admin.web.controller.LoginController;
 import com.admin.web.dto.HitSource;
 import com.admin.web.service.DashBoardService;
 import org.apache.http.HttpHost;
@@ -13,6 +14,9 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.histogram.ExtendedBounds;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -29,12 +33,18 @@ import java.util.Map;
 @Service
 public class DashBoardServiceImpl implements DashBoardService {
 
+    private static final Logger logger = LoggerFactory.getLogger(LoginController.class);
+
+    @Value("${elasticsearch.host}") private String host;
+    @Value("${elasticsearch.port}") private String port;
+    @Value("${elasticsearch.search.size}") private String searchSize;
+
     @Override
     public SearchResponse getGrapeRealtime(String startDate, String endDate) {
         try {
             RestHighLevelClient client = new RestHighLevelClient(
                     RestClient.builder(
-                            new HttpHost("220.230.121.6", 9200)));
+                            new HttpHost(host, Integer.parseInt(port))));
 
             String sDate = String.valueOf(timestampToString(startDate));
             String eDate = String.valueOf(timestampToString(endDate));
@@ -54,7 +64,7 @@ public class DashBoardServiceImpl implements DashBoardService {
             searchRequest.source(searchSourceBuilder);
             SearchResponse searchResponse = client.search(searchRequest);
 
-            System.out.println("response[getRealtimeGrape] : " + searchResponse.toString());
+            logger.info("response[getRealtimeGrape] : {}", searchResponse.toString());
 
             client.close();
             return searchResponse;
@@ -69,7 +79,7 @@ public class DashBoardServiceImpl implements DashBoardService {
         try {
             RestHighLevelClient client = new RestHighLevelClient(
                     RestClient.builder(
-                            new HttpHost("220.230.121.6", 9200)));
+                            new HttpHost(host, Integer.parseInt(port))));
 
             String sDate = String.valueOf(timestampToString(startDate));
             String eDate = String.valueOf(timestampToString(endDate));
@@ -77,7 +87,7 @@ public class DashBoardServiceImpl implements DashBoardService {
             SearchRequest searchRequest = new SearchRequest("appmon*");
             SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
             searchSourceBuilder.query(QueryBuilders.rangeQuery("@timestamp").to(eDate).from(sDate));
-            searchSourceBuilder.size(10000);
+            searchSourceBuilder.size(Integer.parseInt(searchSize));
             searchRequest.source(searchSourceBuilder);
 
             SearchResponse searchResponse = client.search(searchRequest);
