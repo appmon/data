@@ -40,10 +40,10 @@
                     <i class="fa fa-trash-o" aria-hidden="true"></i>
                 </td>
             </tr>
-            <tr th:unless="${#lists.size(activeMenu)} > 0">
-                <td colspan="7" style="text-align:center;">등록한 메뉴가 없습니다.</td>
-            </tr>
         </th:block>
+        <tr th:unless="${#lists.size(activeMenu)} > 0">
+            <td colspan="7" style="text-align:center;">등록한 메뉴가 없습니다.</td>
+        </tr>
         </tbody>
     </table>
 </div>

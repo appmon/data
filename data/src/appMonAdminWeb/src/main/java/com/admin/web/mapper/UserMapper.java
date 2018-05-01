@@ -15,5 +15,4 @@ public interface UserMapper {
 	public List<Menu> selectMainMenuList(@Param("menuNo") List<Integer> loginId);
 
 	public List<Menu> selectMainMenuGrpList(@Param("menuNo") List<Integer> loginId);
-
 }

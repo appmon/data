@@ -1,5 +1,6 @@
-package com.admin.web.controller;
+package com.admin.web.controller.dashboard;
 
+import com.admin.web.controller.BaseController;
 import com.admin.web.dto.HitSource;
 import com.admin.web.service.DashBoardService;
 import org.elasticsearch.action.search.SearchResponse;
@@ -19,7 +20,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Controller
-public class DashBoardController extends BaseController{
+public class DashBoardController extends BaseController {
 
 	@Autowired
 	protected DashBoardService dashBoardService;

@@ -95,18 +95,24 @@ public class DashBoardServiceImpl implements DashBoardService {
             SearchHit[] searchHits = searchResponse.getHits().getHits();
             totalHits.add(searchHits);
             List<HitSource> results = new ArrayList<HitSource>();
+
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+
             if(!CollectionUtils.isEmpty(totalHits)){
                 for(SearchHit[] hits : totalHits){
                     for(SearchHit hit : hits){
                         HitSource source = new HitSource();
                         Map<String, Object> map = hit.getSourceAsMap();
+
+                        String errTime = map.get("err_time").toString();
+
                         source.setDevice_model( (String)map.get("device_model") );
                         source.setApp_gubun( (String)map.get("app_gubun") );
                         source.setOs_version( (String)map.get("os_version") );
                         source.setIp( (String)map.get("ip") );
                         source.setUuid( (String)map.get("uuid") );
                         source.setErr_message( (String)map.get("err_message") );
-                        source.setErr_time( (String)map.get("err_time") );
+                        source.setErr_time(errTime);
                         source.setRefer( (String)map.get("refer") );
                         source.setErr_name( (String)map.get("err_name") );
                         source.setApp_ver( (String)map.get("app_ver") );

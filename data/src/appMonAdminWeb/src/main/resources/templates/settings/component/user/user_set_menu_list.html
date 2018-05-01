@@ -4,7 +4,8 @@
             <col width="10%"/>
             <col width="10%"/>
             <col width="70%"/>
-            <col width="10%"/>
+            <col width="5%"/>
+            <col width="5%"/>
         </colgroup>
         <thead>
         <tr>
@@ -12,6 +13,7 @@
             <th style="text-align:center;">그룹</th>
             <th style="text-align:center;">설정된메뉴</th>
             <th style="text-align:center;">수정</th>
+            <th style="text-align:center;">삭제</th>
         </tr>
         </thead>
         <tbody>
@@ -21,6 +23,9 @@
             <td style="text-align:left; vertical-align:middle;" th:text="${setUser.setMenuNm}?:'설정된 메뉴가 없습니다.'"></td>
             <td style="text-align:center; vertical-align:middle;" th:onclick="'updateSetMenu(\'' + ${setUser.setMenuNo} + '\',\'' + ${setUser.loginId} + '\');'">
                 <i class="fa fa-upload" aria-hidden="true" ></i>
+            </td>
+            <td style="text-align:center;" th:onclick="'deleteSetUserMenu(\'' + ${setUser.loginId} + '\');'">
+                <i class="fa fa-trash-o" aria-hidden="true"></i>
             </td>
         </tr>
         <tr th:unless="${#lists.size(setUser)} > 0">
