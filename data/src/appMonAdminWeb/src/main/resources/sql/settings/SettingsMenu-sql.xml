@@ -30,13 +30,4 @@
 		AND NOT EXISTS (SELECT LOGIN_ID FROM TB_MENU_SET_USER TMSU WHERE TMSU.SET_MENU_NO LIKE CONCAT('%',#{menu.id},'%'))
 	</delete>
 
-	<delete id="deleteSetUser">
-		DELETE FROM TB_MENU_SET_USER WHERE LOGIN_ID = #{setMenu.loginId}
-	</delete>
-
-	<delete id="deleteUser">
-		DELETE FROM TB_MBR WHERE LOGIN_ID = #{setMenu.loginId}
-	</delete>
-
-
 </mapper>
