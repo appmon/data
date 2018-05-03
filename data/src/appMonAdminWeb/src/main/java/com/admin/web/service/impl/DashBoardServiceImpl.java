@@ -11,6 +11,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.filter.FiltersAggregator;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.histogram.ExtendedBounds;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -20,7 +21,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.io.IOException;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -43,8 +43,8 @@ public class DashBoardServiceImpl implements DashBoardService {
     public SearchResponse getGrapeRealtime(String startDate, String endDate) {
         try {
             RestHighLevelClient client = new RestHighLevelClient(
-                    RestClient.builder(
-                            new HttpHost(host, Integer.parseInt(port))));
+                    RestClient.builder(new HttpHost(host, Integer.parseInt(port)))
+            );
 
             String sDate = String.valueOf(timestampToString(startDate));
             String eDate = String.valueOf(timestampToString(endDate));
@@ -63,12 +63,9 @@ public class DashBoardServiceImpl implements DashBoardService {
             searchSourceBuilder.aggregation(aggregation);
             searchRequest.source(searchSourceBuilder);
             SearchResponse searchResponse = client.search(searchRequest);
-
-            logger.info("response[getRealtimeGrape] : {}", searchResponse.toString());
-
             client.close();
             return searchResponse;
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
@@ -78,8 +75,8 @@ public class DashBoardServiceImpl implements DashBoardService {
     public List<HitSource> getTableRealtime(String startDate, String endDate) {
         try {
             RestHighLevelClient client = new RestHighLevelClient(
-                    RestClient.builder(
-                            new HttpHost(host, Integer.parseInt(port))));
+                    RestClient.builder(new HttpHost(host, Integer.parseInt(port)))
+            );
 
             String sDate = String.valueOf(timestampToString(startDate));
             String eDate = String.valueOf(timestampToString(endDate));
@@ -95,24 +92,18 @@ public class DashBoardServiceImpl implements DashBoardService {
             SearchHit[] searchHits = searchResponse.getHits().getHits();
             totalHits.add(searchHits);
             List<HitSource> results = new ArrayList<HitSource>();
-
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-
             if(!CollectionUtils.isEmpty(totalHits)){
                 for(SearchHit[] hits : totalHits){
                     for(SearchHit hit : hits){
                         HitSource source = new HitSource();
                         Map<String, Object> map = hit.getSourceAsMap();
-
-                        String errTime = map.get("err_time").toString();
-
                         source.setDevice_model( (String)map.get("device_model") );
                         source.setApp_gubun( (String)map.get("app_gubun") );
                         source.setOs_version( (String)map.get("os_version") );
                         source.setIp( (String)map.get("ip") );
                         source.setUuid( (String)map.get("uuid") );
                         source.setErr_message( (String)map.get("err_message") );
-                        source.setErr_time(errTime);
+                        source.setErr_time( (String)map.get("err_time") );
                         source.setRefer( (String)map.get("refer") );
                         source.setErr_name( (String)map.get("err_name") );
                         source.setApp_ver( (String)map.get("app_ver") );
@@ -124,7 +115,161 @@ public class DashBoardServiceImpl implements DashBoardService {
                 }
             }
             return results;
-        } catch (IOException e) {
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    @Override
+    public SearchResponse getGaugeTotalCount(String startDate, String endDate) {
+        try {
+            RestHighLevelClient client = new RestHighLevelClient(
+                    RestClient.builder(new HttpHost(host, Integer.parseInt(port)))
+            );
+
+            String sDate = String.valueOf(timestampToString(startDate));
+            String eDate = String.valueOf(timestampToString(endDate));
+
+            SearchRequest searchRequest = new SearchRequest("appmon*");
+            SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+            searchSourceBuilder.query(QueryBuilders.rangeQuery("@timestamp").to(eDate).from(sDate));
+            AggregationBuilder aggregation =
+                    AggregationBuilders
+                            .filters("agg",
+                                    new FiltersAggregator.KeyedFilter("Android", QueryBuilders.termQuery("device_gubun.keyword", "Android")),
+                                    new FiltersAggregator.KeyedFilter("iOS", QueryBuilders.termQuery("device_gubun.keyword", "iOS")));
+            searchSourceBuilder.aggregation(aggregation);
+            searchRequest.source(searchSourceBuilder);
+            SearchResponse searchResponse = client.search(searchRequest);
+            client.close();
+            return searchResponse;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    @Override
+    public SearchResponse getGrapeIosAndroid(String startDate, String endDate) {
+        try {
+            RestHighLevelClient client = new RestHighLevelClient(
+                    RestClient.builder(new HttpHost(host, Integer.parseInt(port)))
+                    );
+
+            String sDate = String.valueOf(timestampToString(startDate));
+            String eDate = String.valueOf(timestampToString(endDate));
+
+            SearchRequest searchRequest = new SearchRequest("appmon*");
+            SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+            searchSourceBuilder.query(QueryBuilders.rangeQuery("@timestamp").to(eDate).from(sDate));
+            ExtendedBounds extendedBounds = new ExtendedBounds(sDate, eDate);
+
+            AggregationBuilder subAgg =
+                    AggregationBuilders
+                            .filters("agg",
+                                    new FiltersAggregator.KeyedFilter("Android", QueryBuilders.termQuery("device_gubun.keyword", "Android")),
+                                    new FiltersAggregator.KeyedFilter("iOS", QueryBuilders.termQuery("device_gubun.keyword", "iOS")));
+
+            AggregationBuilder aggregation =
+                    AggregationBuilders
+                            .dateHistogram("agg")
+                            .field("@timestamp")
+                            .minDocCount(0)
+                            .extendedBounds(extendedBounds)
+                            .dateHistogramInterval(DateHistogramInterval.MINUTE)
+                            .subAggregation(subAgg);
+            searchSourceBuilder.aggregation(aggregation);
+            searchRequest.source(searchSourceBuilder);
+            SearchResponse searchResponse = client.search(searchRequest);
+            client.close();
+            return searchResponse;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    @Override
+    public SearchResponse getPieChartOs(String startDate, String endDate) {
+        try {
+            RestHighLevelClient client = new RestHighLevelClient(
+                    RestClient.builder(new HttpHost(host, Integer.parseInt(port)))
+                    );
+
+            String sDate = String.valueOf(timestampToString(startDate));
+            String eDate = String.valueOf(timestampToString(endDate));
+
+            SearchRequest searchRequest = new SearchRequest("appmon*");
+            SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+            searchSourceBuilder.query(QueryBuilders.rangeQuery("@timestamp").to(eDate).from(sDate));
+            AggregationBuilder aggregation =
+                    AggregationBuilders
+                            .filters("agg",
+                                    new FiltersAggregator.KeyedFilter("Android", QueryBuilders.termQuery("device_gubun.keyword", "Android")),
+                                    new FiltersAggregator.KeyedFilter("iOS", QueryBuilders.termQuery("device_gubun.keyword", "iOS")));
+            searchSourceBuilder.aggregation(aggregation);
+            searchRequest.source(searchSourceBuilder);
+            SearchResponse searchResponse = client.search(searchRequest);
+            client.close();
+            return searchResponse;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    @Override
+    public SearchResponse getPieChartVersion(String startDate, String endDate) {
+        try {
+            RestHighLevelClient client = new RestHighLevelClient(
+                    RestClient.builder(new HttpHost(host, Integer.parseInt(port)))
+            );
+
+            String sDate = String.valueOf(timestampToString(startDate));
+            String eDate = String.valueOf(timestampToString(endDate));
+
+            SearchRequest searchRequest = new SearchRequest("appmon*");
+            SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+            searchSourceBuilder.query(QueryBuilders.rangeQuery("@timestamp").to(eDate).from(sDate));
+            AggregationBuilder aggregation =
+                    AggregationBuilders
+                            .terms("agg")
+                            .field("app_ver.keyword");
+            searchSourceBuilder.aggregation(aggregation);
+            searchRequest.source(searchSourceBuilder);
+            SearchResponse searchResponse = client.search(searchRequest);
+            client.close();
+            return searchResponse;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    @Override
+    public SearchResponse getPieChartDevice(String startDate, String endDate) {
+        try {
+            RestHighLevelClient client = new RestHighLevelClient(
+                    RestClient.builder(new HttpHost(host, Integer.parseInt(port)))
+            );
+
+            String sDate = String.valueOf(timestampToString(startDate));
+            String eDate = String.valueOf(timestampToString(endDate));
+
+            SearchRequest searchRequest = new SearchRequest("appmon*");
+            SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+            searchSourceBuilder.query(QueryBuilders.rangeQuery("@timestamp").to(eDate).from(sDate));
+            AggregationBuilder aggregation =
+                    AggregationBuilders
+                            .terms("agg")
+                            .field("device_model.keyword");
+            searchSourceBuilder.aggregation(aggregation);
+            searchRequest.source(searchSourceBuilder);
+            SearchResponse searchResponse = client.search(searchRequest);
+            client.close();
+            return searchResponse;
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
@@ -143,5 +288,4 @@ public class DashBoardServiceImpl implements DashBoardService {
         //System.out.println("timestamp : " + new Timestamp(cal.getTime().getTime()).toLocalDateTime());
         return new Timestamp(cal.getTime().getTime()).toLocalDateTime();
     }
-
 }

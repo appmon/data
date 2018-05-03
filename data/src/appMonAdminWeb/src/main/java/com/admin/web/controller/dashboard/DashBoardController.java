@@ -66,12 +66,6 @@ public class DashBoardController extends BaseController {
 		return new ModelAndView(VIEW_PATH+COMPONENT_PATH+"table_realtime", "results", null);
 	}
 
-	@RequestMapping( value = "/dashboard/statistics", method = RequestMethod.GET )
-	public ModelAndView statsDashboard(Model model
-			, @RequestParam(value="startDate", defaultValue = "", required = false) String startDate
-			, @RequestParam(value="endDate", defaultValue = "", required = false) String endDate
-	){        return new ModelAndView(VIEW_PATH+"dashboard_statistics");    }
-
 	private Map<String, String> getInitDate(String startDate, String endDate){
 		Map<String, String> map = new HashMap<String, String>();
 		// 시간을 선택하지 않았을 경우

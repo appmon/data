@@ -45,40 +45,21 @@
     var dashboard = function(){
         var cls = this;
 
-        /**
-         * 변수영역
-         */
         {
-            /**
-             * <pre></pre>
-             */
-            cls.dashboard = false;
-
-
-        }
-
-        /**
-         * 함수영역
-         */
-        {
-            /**
-             * <pre>
-             * 초기화
-             * </pre>
-             * @param
-             */
+            // init
             cls.init = function(){
                 cls.sidebar();
                 cls.DateTimePicker.init();
-                cls.GrapeRealtime.init();
-                cls.TableRealtime.init();
-                cls.GaugeTotalCount.init();
-                cls.GrapeIosAndroid.init();
-
-                cls.PieChartOS.init();
-                cls.PieChartVersion.init();
-                cls.PieChartDevice.init();
-
+                if('/dashboard/realtime' == window.location.pathname){
+                    cls.GrapeRealtime.init();
+                    cls.TableRealtime.init();
+                }else if('/dashboard/statistics' == window.location.pathname){
+                    cls.GaugeTotalCount.init();
+                    cls.GrapeIosAndroid.init();
+                    cls.PieChartOS.init();
+                    cls.PieChartVersion.init();
+                    cls.PieChartDevice.init();
+                }
             }
 
             // ajax
@@ -89,6 +70,7 @@
                     url : url,
                     data : JsonParam,
                     cache : false,
+                    async : false,
                     success: function(data) {
                         if($.isFunction(sCallback)){
                             sCallback(data);
@@ -417,6 +399,24 @@
                 }
             };
 
+            // date format
+            cls.gd = function(str){
+                var year = str.substring(0, 4);
+                var month = str.substring(5, 7);
+                var day = str.substring(8, 10);
+                var hour = parseInt(str.substring(11, 13)) + 9;
+                if(hour > 24){
+                    hour = hour - 24;
+                    if(hour < 10){
+                        hour = "0"+hour;
+                    }
+                }
+                var minute = str.substring(14, 16);
+                var second = str.substring(17, 19);
+                // console.log("year : "  + year + "month : "  + month +"day : "  + day +"hour : "  + hour +"minute : "  + minute +"second : "  + second);
+                return hour + ":"+ minute +":" + second;
+            }
+
         }
         return cls;
     }
@@ -429,13 +429,6 @@
     var DateTimePicker = function(){
         var cls = this;
 
-        cls.DateTimePicker = null;
-
-        /**
-         * <pre>
-         * 캘린더 초기화
-         * </pre>
-         */
         cls.init = function(){
             $('#date_timepicker_1').datetimepicker({
                 format : 'YYYY-MM-DD HH:mm:ss'
@@ -460,13 +453,16 @@
 
             $( "#btn_grape_statistics" ).click(function() {
                 var param = {};
-                param.startDate = cls.formatDate( $('#datetimepicker6').data("DateTimePicker").date() );
-                param.endDate =  cls.formatDate( $('#datetimepicker7').data("DateTimePicker").date() );
-                //GrapeRealtime().getData(param);
-                //TableRealtime().getData(param);
+                param.startDate = cls.formatDate( $('#date_timepicker_1').data("DateTimePicker").date() );
+                param.endDate =  cls.formatDate( $('#date_timepicker_2').data("DateTimePicker").date() );
+                GaugeTotalCount().getData(param);
+                GrapeIosAndroid().getData(param);
+                PieChartOS().getData(param);
+                PieChartVersion().getData(param);
+                PieChartDevice().getData(param);
             });
 
-           $('#chk_refresh').change(function() {
+            $('#chk_refresh').change(function() {
                 alert('시작');
                 if($(this).prop('checked')){{
                 }}
@@ -508,15 +504,7 @@
      */
     var GrapeRealtime = function(){
         var cls = this;
-
-        cls.RealTimeGrape = null;
         cls.APIUrl = "/component/grape/realtime";
-
-        /**
-         * <pre>
-         * 실시간 그래프 초기화
-         * </pre>
-         */
 
         cls.init = function(){
             cls.getData();
@@ -558,7 +546,6 @@
                 xAxis: [{
                     type: "category",
                     boundaryGap: !1,
-                    //data: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
                     data : xAxis_data
                 }],
                 yAxis: [{
@@ -575,169 +562,128 @@
                             }
                         }
                     },
-                    //data: [1000, 12, 21, 54, 260, 830, 710]
                     data : series_data
                 }]
             })
         }
 
         cls.getData = function(param){
-            // 성공시 데이터 처리
             var sCallback = function(data){
                 var xAxis_data = [];
                 var series_data = [];
                 for ( var i = 0, len = data.length; i < len; ++i) {
                     var buket = data[i];
-                    xAxis_data.push(cls.gd(buket.keyAsString));
+                    xAxis_data.push(dashboard().gd(buket.keyAsString));
                     series_data.push(buket.docCount);
                 }
-                console.log("xAxis_data : " + xAxis_data);
-                console.log("series_data : " + series_data);
                 cls.getGrape(xAxis_data, series_data);
             }
-            // 데이터 로딩중 처리
-            var bCallback = function(){
-            }
-            // 데이터 로딩 완료시 처리
-            var cCallback = function(){
-            }
-            dashboard().ajaxCall('get', cls.APIUrl, param, sCallback, null, bCallback, cCallback);
-        }
-
-        cls.gd = function(str){
-            var year = str.substring(0, 4);
-            var month = str.substring(5, 7);
-            var day = str.substring(8, 10);
-            var hour = parseInt(str.substring(11, 13)) + 9;
-            if(hour > 24){
-                hour = hour - 24;
-                if(hour < 10){
-                    hour = "0"+hour;
-                }
-            }
-            var minute = str.substring(14, 16);
-            var second = str.substring(17, 19);
-            // console.log("year : "  + year + "month : "  + month +"day : "  + day +"hour : "  + hour +"minute : "  + minute +"second : "  + second);
-            return hour + ":"+ minute +":" + second;
+            dashboard().ajaxCall('get', cls.APIUrl, param, sCallback, null, null, null);
         }
 
         return cls;
     }
 
-   /**
-    * <pre>
-    * 실시간 에러현황 
-    * </pre>
-    */
+    /**
+     * <pre>
+     * 실시간 에러현황
+     * </pre>
+     */
     var TableRealtime = function(){
         var cls = this;
-
-        cls.RealTimeTable = null;
         cls.APIUrl = "/component/table/realtime";
 
-        /**
-         * <pre>
-         * 테이블 초기화
-         * </pre>
-         */
         cls.init = function(){
             cls.getData();
         }
 
         cls.getData = function(param){
-            // 성공시 데이터 처리
             var sCallback = function(data){
                 $('#table_realtime').html(data);
                 cls.init_DataTables();
             }
-            // 데이터 로딩중 처리
-            var bCallback = function(){
-            }
-            // 데이터 로딩 완료시 처리
-            var cCallback = function(){
-            }
-            dashboard().ajaxCall('get', cls.APIUrl, param, sCallback, null, bCallback, cCallback);
+            dashboard().ajaxCall('get', cls.APIUrl, param, sCallback, null, null, null);
         }
 
-       cls.init_DataTables = function() {
-           if( typeof ($.fn.DataTable) === 'undefined'){ return; }
-           var handleDataTableButtons = function() {
-               if ($("#datatable-buttons").length) {
-                   $("#datatable-buttons").DataTable({
-                       dom: "Bfrtip",
-                       buttons: [
-                           {
-                               extend: "copy",
-                               className: "btn-sm"
-                           },
-                           {
-                               extend: "csv",
-                               className: "btn-sm"
-                           },
-                           {
-                               extend: "excel",
-                               className: "btn-sm"
-                           },
-                           {
-                               extend: "pdfHtml5",
-                               className: "btn-sm"
-                           },
-                           {
-                               extend: "print",
-                               className: "btn-sm"
-                           },
-                       ],
-                       responsive: true
-                   });
-               }
-           };
+        cls.init_DataTables = function() {
+            if( typeof ($.fn.DataTable) === 'undefined'){ return; }
+            var handleDataTableButtons = function() {
+                if ($("#datatable-buttons").length) {
+                    $("#datatable-buttons").DataTable({
+                        dom: "Bfrtip",
+                        buttons: [
+                            {
+                                extend: "copy",
+                                className: "btn-sm"
+                            },
+                            {
+                                extend: "csv",
+                                className: "btn-sm"
+                            },
+                            {
+                                extend: "excel",
+                                className: "btn-sm"
+                            },
+                            {
+                                extend: "pdfHtml5",
+                                className: "btn-sm"
+                            },
+                            {
+                                extend: "print",
+                                className: "btn-sm"
+                            },
+                        ],
+                        responsive: true
+                    });
+                }
+            };
 
-           TableManageButtons = function() {
-               "use strict";
-               return {
-                   init: function() {
-                       handleDataTableButtons();
-                   }
-               };
-           }();
+            TableManageButtons = function() {
+                "use strict";
+                return {
+                    init: function() {
+                        handleDataTableButtons();
+                    }
+                };
+            }();
 
-           $('#datatable').dataTable();
+            $('#datatable').dataTable();
 
-           $('#datatable-keytable').DataTable({
-               keys: true
-           });
+            $('#datatable-keytable').DataTable({
+                keys: true
+            });
 
-           $('#datatable-responsive').DataTable();
+            $('#datatable-responsive').DataTable();
 
-           $('#datatable-scroller').DataTable({
-               ajax: "js/datatables/json/scroller-demo.json",
-               deferRender: true,
-               scrollY: 380,
-               scrollCollapse: true,
-               scroller: true
-           });
+            $('#datatable-scroller').DataTable({
+                ajax: "js/datatables/json/scroller-demo.json",
+                deferRender: true,
+                scrollY: 380,
+                scrollCollapse: true,
+                scroller: true
+            });
 
-           $('#datatable-fixed-header').DataTable({
-               fixedHeader: true
-           });
+            $('#datatable-fixed-header').DataTable({
+                fixedHeader: true
+            });
 
-           var $datatable = $('#datatable-checkbox');
+            var $datatable = $('#datatable-checkbox');
 
-           $datatable.dataTable({
-               'order': [[ 1, 'asc' ]],
-               'columnDefs': [
-                   { orderable: false, targets: [0] }
-               ]
-           });
-           $datatable.on('draw.dt', function() {
-               $('checkbox input').iCheck({
-                   checkboxClass: 'icheckbox_flat-green'
-               });
-           });
+            $datatable.dataTable({
+                'order': [[ 1, 'asc' ]],
+                'columnDefs': [
+                    { orderable: false, targets: [0] }
+                ]
+            });
+            $datatable.on('draw.dt', function() {
+                $('checkbox input').iCheck({
+                    checkboxClass: 'icheckbox_flat-green'
+                });
+            });
 
-           TableManageButtons.init();
+            TableManageButtons.init();
 
-       };
+        };
         return cls;
     }
 
@@ -748,22 +694,13 @@
      */
     var GaugeTotalCount = function(){
         var cls = this;
-
-        cls.StatsGuage = null;
-        cls.APIUrl = "";
-
-        /**
-         * <pre>
-         * 그래프 초기화
-         * </pre>
-         */
+        cls.APIUrl = "/component/gauge/count";
 
         cls.init = function(){
-            //cls.getData();
-            cls.getGrape();
+            cls.getData();
         }
 
-        cls.getGrape = function(){
+        cls.getGrape = function(result_data){
             var chart = echarts.init(document.getElementById('gauge_total_count'), dashboard().chartOption);
             chart.setOption({
                 tooltip: {
@@ -819,13 +756,13 @@
                         formatter: function(v) {
                             switch (v + '') {
                                 case '10':
-                                    return 'a';
-                                case '30':
-                                    return 'b';
-                                case '60':
-                                    return 'c';
-                                case '90':
-                                    return 'd';
+                                    return '';
+                                case '500':
+                                    return '';
+                                case '1000':
+                                    return '';
+                                case '5000':
+                                    return '5000건 이상';
                                 default:
                                     return '';
                             }
@@ -864,14 +801,14 @@
                         width: 100,
                         height: 40,
                         offsetCenter: ['-60%', 10],
-                        formatter: '{value}%',
+                        formatter: '{value}건',
                         textStyle: {
                             color: 'auto',
                             fontSize: 30
                         }
                     },
                     data: [{
-                        value: 50,
+                        value: result_data,
                         name: '발생건수'
                     }]
                 }]
@@ -879,16 +816,10 @@
         }
 
         cls.getData = function(param){
-            // 성공시 데이터 처리
             var sCallback = function(data){
+                cls.getGrape(data.docCount);
             }
-            // 데이터 로딩중 처리
-            var bCallback = function(){
-            }
-            // 데이터 로딩 완료시 처리
-            var cCallback = function(){
-            }
-            dashboard().ajaxCall('get', cls.APIUrl, param, sCallback, null, bCallback, cCallback);
+            dashboard().ajaxCall('get', cls.APIUrl, param, sCallback, null, null, null);
         }
 
         return cls;
@@ -901,29 +832,20 @@
      */
     var GrapeIosAndroid = function(){
         var cls = this;
-
-        cls.RealTimeGrape = null;
-        cls.APIUrl = "";
-
-        /**
-         * <pre>
-         * 그래프 초기화
-         * </pre>
-         */
+        cls.APIUrl = "/component/grape/IosAndroid";
 
         cls.init = function(){
-            //cls.getData();
-            cls.getGrape();
+            cls.getData();
         }
 
-        cls.getGrape = function(xAxis_data, series_data){
+        cls.getGrape = function(xAxis_data, series_data_ios, series_data_android){
             var chart = echarts.init(document.getElementById('grape_ios_android'), dashboard().chartOption);
             chart.setOption({
                 tooltip: {
                     trigger: 'axis'
                 },
                 legend: {
-                    data: ['ios', 'android']
+                    data: ['iOS', 'Android']
                 },
                 toolbox: {
                     show: false
@@ -931,70 +853,44 @@
                 calculable: false,
                 xAxis: [{
                     type: 'category',
-                    data: ['1?', '2?', '3?', '4?', '5?', '6?', '7?', '8?', '9?', '10?', '11?', '12?']
+                    data: xAxis_data
                 }],
                 yAxis: [{
                     type: 'value'
                 }],
                 series: [{
-                    name: 'ios',
+                    name: 'iOS',
                     type: 'bar',
-                    data: [2.0, 4.9, 7.0, 23.2, 25.6, 76.7, 135.6, 162.2, 32.6, 20.0, 6.4, 3.3],
-                    markPoint: {
-                        data: [{
-                            type: 'max',
-                            name: '???'
-                        }, {
-                            type: 'min',
-                            name: '???'
-                        }]
-                    },
-                    markLine: {
-                        data: [{
-                            type: 'average',
-                            name: '???'
-                        }]
-                    }
+                    data: series_data_ios,
                 }, {
-                    name: 'android',
+                    name: 'Android',
                     type: 'bar',
-                    data: [2.6, 5.9, 9.0, 26.4, 28.7, 70.7, 175.6, 182.2, 48.7, 18.8, 6.0, 2.3],
-                    markPoint: {
-                        data: [{
-                            name: 'sales',
-                            value: 182.2,
-                            xAxis: 7,
-                            yAxis: 183,
-                        }, {
-                            name: 'purchases',
-                            value: 2.3,
-                            xAxis: 11,
-                            yAxis: 3
-                        }]
-                    },
-                    markLine: {
-                        data: [{
-                            type: 'average',
-                            name: '???'
-                        }]
-                    }
+                    data: series_data_android,
                 }]
             });
         }
 
         cls.getData = function(param){
-            // 성공시 데이터 처리
             var sCallback = function(data){
+                var xAxis_data = [];
+                var series_data_ios = [];
+                var series_data_android = [];
+                for (var date in data) {
+                    xAxis_data.push(dashboard().gd(date));
+                    for ( var i = 0, len = data[date].length; i < len; ++i) {
+                        var key = data[date][i].key;
+                        var docCount = data[date][i].docCount;
+                        if('Android' == key){
+                            series_data_android.push(docCount);
+                        }else{
+                            series_data_ios.push(docCount);
+                        }
+                    }
+                }
+                cls.getGrape(xAxis_data, series_data_ios, series_data_android);
             }
-            // 데이터 로딩중 처리
-            var bCallback = function(){
-            }
-            // 데이터 로딩 완료시 처리
-            var cCallback = function(){
-            }
-            dashboard().ajaxCall('get', cls.APIUrl, param, sCallback, null, bCallback, cCallback);
+            dashboard().ajaxCall('get', cls.APIUrl, param, sCallback, null, null, null);
         }
-
 
         return cls;
     }
@@ -1006,22 +902,13 @@
      */
     var PieChartOS = function(){
         var cls = this;
-
-        cls.StatsGuage = null;
-        cls.APIUrl = "";
-
-        /**
-         * <pre>
-         * 그래프 초기화
-         * </pre>
-         */
+        cls.APIUrl = "/component/piechart/os";
 
         cls.init = function(){
-            //cls.getData();
-            cls.getGrape();
+            cls.getData();
         }
 
-        cls.getGrape = function(){
+        cls.getGrape = function(result_data){
             var chart = echarts.init(document.getElementById('piechart_os'), dashboard().chartOption);
             chart.setOption({
                 tooltip: {
@@ -1031,7 +918,7 @@
                 legend: {
                     x: 'center',
                     y: 'bottom',
-                    data: ['IOS', 'Android']
+                    data: ['iOS', 'Android']
                 },
                 toolbox: {
                     show: true,
@@ -1065,10 +952,10 @@
                     radius: '55%',
                     center: ['50%', '48%'],
                     data: [{
-                        value: 335,
-                        name: 'IOS'
+                        value: result_data[1],
+                        name: 'iOS'
                     }, {
-                        value: 1548,
+                        value: result_data[0],
                         name: 'Android'
                     }]
                 }]
@@ -1076,16 +963,14 @@
         }
 
         cls.getData = function(param){
-            // 성공시 데이터 처리
             var sCallback = function(data){
+                var result_data = [];
+                for ( var i = 0, len = data.length; i < len; ++i) {
+                    result_data.push(data[i].docCount);
+                }
+                cls.getGrape(result_data);
             }
-            // 데이터 로딩중 처리
-            var bCallback = function(){
-            }
-            // 데이터 로딩 완료시 처리
-            var cCallback = function(){
-            }
-            dashboard().ajaxCall('get', cls.APIUrl, param, sCallback, null, bCallback, cCallback);
+            dashboard().ajaxCall('get', cls.APIUrl, param, sCallback, null, null, null);
         }
 
         return cls;
@@ -1098,22 +983,13 @@
      */
     var PieChartVersion = function(){
         var cls = this;
-
-        cls.StatsGuage = null;
-        cls.APIUrl = "";
-
-        /**
-         * <pre>
-         * 그래프 초기화
-         * </pre>
-         */
+        cls.APIUrl = "/component/piechart/version";
 
         cls.init = function(){
-            //cls.getData();
-            cls.getGrape();
+            cls.getData();
         }
 
-        cls.getGrape = function(){
+        cls.getGrape = function(legend_data, result_data){
             var chart = echarts.init(document.getElementById('piechart_version'), dashboard().chartOption);
             chart.setOption({
                 tooltip: {
@@ -1123,7 +999,7 @@
                 legend: {
                     x: 'center',
                     y: 'bottom',
-                    data: ['3.0', '3.2', '3.8', '4.3', '4.5', '4.6']
+                    data: legend_data
                 },
                 toolbox: {
                     show: true,
@@ -1152,40 +1028,25 @@
                     x: '50%',
                     max: 40,
                     sort: 'ascending',
-                    data: [{
-                        value: 10,
-                        name: '3.0'
-                    }, {
-                        value: 5,
-                        name: '3.2'
-                    }, {
-                        value: 15,
-                        name: '3.8'
-                    }, {
-                        value: 25,
-                        name: '4.3'
-                    }, {
-                        value: 20,
-                        name: '4.5'
-                    }, {
-                        value: 35,
-                        name: '4.6'
-                    }]
+                    data : result_data
                 }]
             });
         }
 
         cls.getData = function(param){
-            // 성공시 데이터 처리
             var sCallback = function(data){
+                var legend_data = [];
+                var result_data = [];
+                for ( var i = 0, len = data.length; i < len; ++i) {
+                    var result = {};
+                    result.name = data[i].key;
+                    result.value = data[i].docCount;
+                    result_data.push(result);
+                    legend_data.push(data[i].key);
+                }
+                cls.getGrape(legend_data, result_data);
             }
-            // 데이터 로딩중 처리
-            var bCallback = function(){
-            }
-            // 데이터 로딩 완료시 처리
-            var cCallback = function(){
-            }
-            dashboard().ajaxCall('get', cls.APIUrl, param, sCallback, null, bCallback, cCallback);
+            dashboard().ajaxCall('get', cls.APIUrl, param, sCallback, null, null, null);
         }
 
         return cls;
@@ -1198,22 +1059,13 @@
      */
     var PieChartDevice = function(){
         var cls = this;
-
-        cls.StatsGuage = null;
-        cls.APIUrl = "";
-
-        /**
-         * <pre>
-         * 그래프 초기화
-         * </pre>
-         */
+        cls.APIUrl = "/component/piechart/device";
 
         cls.init = function(){
-            //cls.getData();
-            cls.getGrape();
+            cls.getData();
         }
 
-        cls.getGrape = function(){
+        cls.getGrape = function(legend_data, result_data){
             var chart = echarts.init(document.getElementById('piechart_device'), dashboard().chartOption);
             chart.setOption({
                 tooltip: {
@@ -1224,7 +1076,7 @@
                 legend: {
                     x: 'center',
                     y: 'bottom',
-                    data: ['iPhone7', 'iPhone8', '갤럭시7', '갤럭시8', '갤럭시노트']
+                    data: legend_data
                 },
                 toolbox: {
                     show: true,
@@ -1275,37 +1127,25 @@
                             }
                         }
                     },
-                    data: [{
-                        value: 335,
-                        name: 'iPhone7'
-                    }, {
-                        value: 310,
-                        name: 'iPhone8'
-                    }, {
-                        value: 234,
-                        name: '갤럭시7'
-                    }, {
-                        value: 135,
-                        name: '갤럭시8'
-                    }, {
-                        value: 1548,
-                        name: '갤럭시노트'
-                    }]
+                    data: result_data
                 }]
             });
         }
 
         cls.getData = function(param){
-            // 성공시 데이터 처리
             var sCallback = function(data){
+                var legend_data = [];
+                var result_data = [];
+                for ( var i = 0, len = data.length; i < len; ++i) {
+                    var result = {};
+                    result.name = data[i].key;
+                    result.value = data[i].docCount;
+                    result_data.push(result);
+                    legend_data.push(data[i].key);
+                }
+                cls.getGrape(legend_data, result_data);
             }
-            // 데이터 로딩중 처리
-            var bCallback = function(){
-            }
-            // 데이터 로딩 완료시 처리
-            var cCallback = function(){
-            }
-            dashboard().ajaxCall('get', cls.APIUrl, param, sCallback, null, bCallback, cCallback);
+            dashboard().ajaxCall('get', cls.APIUrl, param, sCallback, null, null, null);
         }
 
         return cls;
